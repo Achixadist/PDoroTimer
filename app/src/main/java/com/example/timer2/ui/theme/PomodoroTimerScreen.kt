@@ -20,11 +20,11 @@ import com.example.timer2.timer.TimerViewModel
 
 @Composable
 fun PomodoroTimerScreen(
-    viewModel: TimerViewModel = viewModel() // Initializes the ViewModel instance
+    viewModel: TimerViewModel = viewModel()
 ) {
-    // Correctly collect the state values from the ViewModel
-    val timeLeftInMillis by viewModel.timeLeft.collectAsState() // Collect the time left state
-    val isTimerRunning by viewModel.isRunning.collectAsState() // Collect the running state
+    // Observing state from ViewModel
+    val timeLeftInMillis by viewModel.timeLeft.collectAsState()
+    val isTimerRunning by viewModel.isRunning.collectAsState()
 
     val minutes = (timeLeftInMillis / 1000) / 60
     val seconds = (timeLeftInMillis / 1000) % 60
@@ -32,7 +32,7 @@ fun PomodoroTimerScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF5F5F5) // Light gray background
+        color = Color(0xFFF5F5F5)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -43,7 +43,7 @@ fun PomodoroTimerScreen(
         ) {
             Text(
                 text = timeFormatted,
-                fontSize = 72.sp,
+                fontSize = 48.sp,
                 color = Color.Black,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(16.dp)
@@ -53,22 +53,16 @@ fun PomodoroTimerScreen(
 
             Button(
                 onClick = {
-                    if (isTimerRunning) {
-                        viewModel.pauseTimer()
-                    } else {
-                        viewModel.startTimer(
-                            onTick = { /* Handle onTick */ },
-                            onFinish = { /* Handle onFinish */ }
-                        )
-                    }
+                    if (isTimerRunning) viewModel.pauseTimer()
+                    else viewModel.startPomodoroTimer() // Calls the start method for Pomodoro
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-                    .background(Color(0xFF6200EE), RoundedCornerShape(50)) // Purple button
+                    .background(Color(0xFF6200EE), RoundedCornerShape(50))
             ) {
                 Text(
-                    text = if (isTimerRunning) "Pause" else "Start",
+                    text = if (isTimerRunning) "Pause Pomodoro" else "Start Pomodoro",
                     fontSize = 18.sp,
                     color = Color.White
                 )
@@ -77,11 +71,47 @@ fun PomodoroTimerScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { viewModel.resetTimer() },
+                onClick = {
+                    viewModel.startShortBreak() // Calls the start method for Short Break
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-                    .background(Color(0xFFB00020), RoundedCornerShape(50)) // Red button
+                    .background(Color(0xFF03DAC5), RoundedCornerShape(50))
+            ) {
+                Text(
+                    text = "Start Short Break",
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    viewModel.startLongBreak() // Calls the start method for Long Break
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .background(Color(0xFF018786), RoundedCornerShape(50))
+            ) {
+                Text(
+                    text = "Start Long Break",
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { viewModel.resetTimer() }, // Resets the timer
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .background(Color(0xFFB00020), RoundedCornerShape(50))
             ) {
                 Text(
                     text = "Reset",
