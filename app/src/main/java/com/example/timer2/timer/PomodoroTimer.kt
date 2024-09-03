@@ -2,10 +2,9 @@ package com.example.timer2.timer
 
 import android.os.CountDownTimer
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 
 class PomodoroTimer(
-    private val totalTimeInMillis: Long = 1500000L // 25 minutes
+    private val totalTimeInMillis: Long
 ) {
     private var timeLeftInMillis = mutableStateOf(totalTimeInMillis)
     private var timerRunning = mutableStateOf(false)
@@ -40,4 +39,13 @@ class PomodoroTimer(
 
     fun getTimeLeftInMillis() = timeLeftInMillis.value
     fun isTimerRunning() = timerRunning.value
+
+    // Methods to set timer state from ViewModel
+    fun setTimeLeftInMillis(millis: Long) {
+        timeLeftInMillis.value = millis
+    }
+
+    fun setTimerRunning(running: Boolean) {
+        timerRunning.value = running
+    }
 }
