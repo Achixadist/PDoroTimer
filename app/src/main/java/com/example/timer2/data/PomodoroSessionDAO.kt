@@ -1,6 +1,11 @@
 package com.example.timer2.data
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -15,6 +20,6 @@ interface PomodoroSessionDao {
     @Delete
     suspend fun deleteSession(session: PomodoroSession)
 
-    @Query("SELECT * FROM pomodoro_sessions ORDER BY id DESC")
+    @Query("SELECT * FROM pomodoro_session_table")
     fun getAllSessions(): Flow<List<PomodoroSession>>
 }

@@ -2,19 +2,19 @@ package com.example.timer2.data
 
 import kotlinx.coroutines.flow.Flow
 
-class PomodoroRepository(private val dao: PomodoroSessionDao) {
+class PomodoroRepository(private val pomodoroSessionDao: PomodoroSessionDao) {
 
-    val allSessions: Flow<List<PomodoroSession>> = dao.getAllSessions()
+    val allSessions: Flow<List<PomodoroSession>> = pomodoroSessionDao.getAllSessions()
 
     suspend fun insertSession(session: PomodoroSession) {
-        dao.insertSession(session)
+        pomodoroSessionDao.insertSession(session)
     }
 
     suspend fun updateSession(session: PomodoroSession) {
-        dao.updateSession(session)
+        pomodoroSessionDao.updateSession(session)
     }
 
     suspend fun deleteSession(session: PomodoroSession) {
-        dao.deleteSession(session)
+        pomodoroSessionDao.deleteSession(session)
     }
 }

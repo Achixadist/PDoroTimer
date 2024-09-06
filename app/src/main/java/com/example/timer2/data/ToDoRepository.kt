@@ -4,17 +4,15 @@ import kotlinx.coroutines.flow.Flow
 
 class ToDoRepository(private val toDoItemDao: ToDoItemDao) {
 
-    val allToDoItems: Flow<List<ToDoItem>> = toDoItemDao.getAllToDoItems()
-
-    suspend fun insertToDoItem(toDoItem: ToDoItem) {
-        toDoItemDao.insertToDoItem(toDoItem)
+    fun getAllToDoItems(): Flow<List<ToDoItem>> {
+        return toDoItemDao.getAllToDoItems()
     }
 
-    suspend fun updateToDoItem(toDoItem: ToDoItem) {
-        toDoItemDao.updateToDoItem(toDoItem)
+    suspend fun insertToDoItem(item: ToDoItem) {
+        toDoItemDao.insertToDoItem(item)
     }
 
-    suspend fun deleteToDoItem(toDoItem: ToDoItem) {
-        toDoItemDao.deleteToDoItem(toDoItem)
+    suspend fun deleteToDoItem(item: ToDoItem) {
+        toDoItemDao.deleteToDoItem(item)
     }
 }

@@ -1,124 +1,91 @@
 package com.example.timer2.ui.theme
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.timer2.timer.TimerViewModel
+import kotlinx.coroutines.delay
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun PomodoroTimerScreen(
-    viewModel: TimerViewModel = viewModel()
+    taskName: String,
+    onBack: () -> Unit // Callback to navigate back to the to-do list
 ) {
-    // Observing state from ViewModel
-    val timeLeftInMillis by viewModel.timeLeft.collectAsState()
-    val isTimerRunning by viewModel.isRunning.collectAsState()
+    var timeLeft by remember { mutableStateOf(25 * 60 * 1000L) } // 25 minutes in milliseconds
+    var isRunning by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    val minutes = (timeLeftInMillis / 1000) / 60
-    val seconds = (timeLeftInMillis / 1000) % 60
-    val timeFormatted = String.format("%02d:%02d", minutes, seconds)
+    LaunchedEffect(isRunning) {
+        if (isRunning) {
+            while (timeLeft > 0 && isRunning) {
+                delay(1000L) // Decrease the timer every second
+                timeLeft -= 1000L
+            }
+            if (timeLeft == 0L) {
+                isRunning = false // Stop when time is up
+            }
+        }
+    }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF5F5F5)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = timeFormatted,
-                fontSize = 48.sp,
-                color = Color.Black,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp)
-            )
+        Text(
+            text = "Task: $taskName",
+            fontSize = 24.sp
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    if (isTimerRunning) viewModel.pauseTimer()
-                    else viewModel.startPomodoroTimer() // Calls the start method for Pomodoro
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .background(Color(0xFF6200EE), RoundedCornerShape(50))
-            ) {
-                Text(
-                    text = if (isTimerRunning) "Pause Pomodoro" else "Start Pomodoro",
-                    fontSize = 18.sp,
-                    color = Color.White
-                )
-            }
+        // Display the countdown timer
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(timeLeft) % 60
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(timeLeft) % 60
+        Text(
+            text = String.format("%02d:%02d", minutes, seconds),
+            fontSize = 48.sp
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {
-                    viewModel.startShortBreak() // Calls the start method for Short Break
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .background(Color(0xFF03DAC5), RoundedCornerShape(50))
-            ) {
-                Text(
-                    text = "Start Short Break",
-                    fontSize = 18.sp,
-                    color = Color.White
-                )
-            }
+        // Button to toggle the Pomodoro timer (Start, Pause, Resume)
+        Button(onClick = { isRunning = !isRunning }) {
+            Text(if (isRunning) "Pause Pomodoro" else "Start Pomodoro")
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Button(
-                onClick = {
-                    viewModel.startLongBreak() // Calls the start method for Long Break
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .background(Color(0xFF018786), RoundedCornerShape(50))
-            ) {
-                Text(
-                    text = "Start Long Break",
-                    fontSize = 18.sp,
-                    color = Color.White
-                )
-            }
+        // Button to reset the Pomodoro timer
+        Button(onClick = {
+            isRunning = false
+            timeLeft = 25 * 60 * 1000L
+        }) {
+            Text("Reset Timer")
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = { viewModel.resetTimer() }, // Resets the timer
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .background(Color(0xFFB00020), RoundedCornerShape(50))
-            ) {
-                Text(
-                    text = "Reset",
-                    fontSize = 18.sp,
-                    color = Color.White
-                )
-            }
+        Button(onClick = onBack) {
+            Text("Back to To-Do List")
         }
     }
 }
