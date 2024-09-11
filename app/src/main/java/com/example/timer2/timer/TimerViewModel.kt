@@ -1,6 +1,7 @@
 package com.example.timer2.timer
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.timer2.data.*
@@ -25,6 +26,8 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning
 
+    private var finishCallback: (() -> Unit)? = null
+
     init {
         val database = PomodoroDatabase.getDatabase(application)
         val sessionDao = database.pomodoroSessionDao()
@@ -44,6 +47,16 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
 
     private var activeTimer: SetTimer = defaultTimer
 
+    fun setPomodoroDuration(minutes: Long) {
+        Log.d("TimerViewModel", "Setting Pomodoro Duration to $minutes minutes")
+        _timeLeft.value = minutes * 60 * 1000 // Umwandlung von Minuten in Millisekunden
+        resetTimer() // Setzt den Timer zurück
+    }
+
+    fun onFinishCallback(callback: () -> Unit) {
+        finishCallback = callback
+    }
+
     // Function to start the timer with the specified duration
     private fun start(duration: Long, onFinish: () -> Unit) {
 
@@ -57,9 +70,14 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (_timeLeft.value <= 0L) {
                 _isRunning.value = false
-                onFinish()
+                finishCallback?.invoke() // Call the finish callback here.
+                finishCallback?.let { resetFinishCallback() } // Reset callback after use.
             }
         }
+    }
+
+    private fun resetFinishCallback() {
+        finishCallback=null // Reset the callback to avoid memory leaks.
     }
 
     private fun stop(){
