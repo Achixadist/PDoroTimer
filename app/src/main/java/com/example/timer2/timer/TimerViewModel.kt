@@ -19,7 +19,7 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     val allToDoItems: Flow<List<ToDoItem>>
 
     // StateFlows to handle the timer's time and running state
-    private val _timeLeft = MutableStateFlow(25 * 60 * 1000L) // Initial time for Pomodoro in milliseconds
+    private val _timeLeft = MutableStateFlow(25 * 60 * 1000L) // Initial time in milliseconds
     val timeLeft: StateFlow<Long> = _timeLeft
 
     private val _isRunning = MutableStateFlow(false)
@@ -36,43 +36,39 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
         allToDoItems = toDoRepository.allToDoItems
     }
 
-    // Timer durations in milliseconds
-    private val pomodoroDuration = 25 * 60 * 1000L
-    private val shortBreakDuration = 5 * 60 * 1000L
-    private val longBreakDuration = 15 * 60 * 1000L
+    // Setting Timers
+    private val defaultTimer = SetTimer(TimerSettings().defaultTimer, TimerType.DEFAULT)
+    private val workTimer = SetTimer(TimerSettings().currentTimer, TimerType.WORK)
+    private val refreshTimer = SetTimer(TimerSettings().refreshTimer, TimerType.REFRESH)
+    private val breakTimer = SetTimer(TimerSettings().breakTimer, TimerType.BREAK)
+
+    private var activeTimer: SetTimer = defaultTimer
 
     // Function to start the timer with the specified duration
-    private fun startTimer(duration: Long, onFinish: () -> Unit) {
+    private fun start(duration: Long, onFinish: () -> Unit) {
+
         _isRunning.value = true
-        _timeLeft.value = duration
 
         viewModelScope.launch {
-            while (_timeLeft.value > 0 && _isRunning.value) {
-                delay(1000) // Wait for 1 second
-                _timeLeft.value -= 1000 // Decrease the time left by 1 second
+            val endTime = System.currentTimeMillis() + _timeLeft.value
+            while (System.currentTimeMillis() < endTime && _isRunning.value) {
+                _timeLeft.value = endTime - System.currentTimeMillis()
+                delay(100) // Update every 100ms for smoother countdown
             }
-            if (_timeLeft.value <= 0) {
+            if (_timeLeft.value <= 0L) {
                 _isRunning.value = false
                 onFinish()
             }
         }
     }
 
-    fun startPomodoroTimer() {
-        startTimer(pomodoroDuration) {
+    private fun stop(){
+        _isRunning.value = false
+    }
+
+    fun startTimer() {
+        start(activeTimer.duration) {
             // Actions when Pomodoro timer finishes
-        }
-    }
-
-    fun startShortBreak() {
-        startTimer(shortBreakDuration) {
-            // Actions when short break finishes
-        }
-    }
-
-    fun startLongBreak() {
-        startTimer(longBreakDuration) {
-            // Actions when long break finishes
         }
     }
 
@@ -80,10 +76,27 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
         _isRunning.value = false // Pauses the timer
     }
 
-    fun resetTimer() {
-        _isRunning.value = false // Stops the timer
-        _timeLeft.value = pomodoroDuration // Resets the timer to the Pomodoro duration
+    fun swapToWork() {
+        activeTimer = workTimer
+        resetTimer()
     }
+
+    fun swapToRefresh(){
+        activeTimer = refreshTimer
+        resetTimer()
+    }
+
+    fun swapToBreak(){
+        activeTimer = breakTimer
+        resetTimer()
+    }
+
+    fun resetTimer() {
+        stop()
+        _timeLeft.value = activeTimer.duration
+    }
+
+
 
     // To-Do Methods
     fun insertToDoItem(toDoItem: ToDoItem) {

@@ -54,7 +54,7 @@ fun PomodoroTimerScreen(
             Button(
                 onClick = {
                     if (isTimerRunning) viewModel.pauseTimer()
-                    else viewModel.startPomodoroTimer() // Calls the start method for Pomodoro
+                    else viewModel.startTimer() // Calls the start method for Pomodoro
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -62,7 +62,7 @@ fun PomodoroTimerScreen(
                     .background(Color(0xFF6200EE), RoundedCornerShape(50))
             ) {
                 Text(
-                    text = if (isTimerRunning) "Pause Pomodoro" else "Start Pomodoro",
+                    text = if (isTimerRunning) "Pause Timer" else "Start Timer",
                     fontSize = 18.sp,
                     color = Color.White
                 )
@@ -72,7 +72,7 @@ fun PomodoroTimerScreen(
 
             Button(
                 onClick = {
-                    viewModel.startShortBreak() // Calls the start method for Short Break
+                    viewModel.swapToWork() // Calls the start method for Short Break
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -80,7 +80,7 @@ fun PomodoroTimerScreen(
                     .background(Color(0xFF03DAC5), RoundedCornerShape(50))
             ) {
                 Text(
-                    text = "Start Short Break",
+                    text = "Swap to List-Work",
                     fontSize = 18.sp,
                     color = Color.White
                 )
@@ -90,7 +90,25 @@ fun PomodoroTimerScreen(
 
             Button(
                 onClick = {
-                    viewModel.startLongBreak() // Calls the start method for Long Break
+                    viewModel.swapToRefresh() // Calls the start method for Short Break
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .background(Color(0xFF03DAC5), RoundedCornerShape(50))
+            ) {
+                Text(
+                    text = "Swap to Refresh",
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    viewModel.swapToBreak() // Calls the start method for Long Break
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -98,7 +116,7 @@ fun PomodoroTimerScreen(
                     .background(Color(0xFF018786), RoundedCornerShape(50))
             ) {
                 Text(
-                    text = "Start Long Break",
+                    text = "Swap to Break",
                     fontSize = 18.sp,
                     color = Color.White
                 )
