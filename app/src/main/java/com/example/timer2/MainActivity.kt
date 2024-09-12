@@ -3,88 +3,53 @@ package com.example.timer2
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.compose.runtime.*
 import androidx.navigation.compose.rememberNavController
 import androidx.room.Room
 import com.example.timer2.data.AppDatabase
 import com.example.timer2.data.ToDoRepository
-import com.example.timer2.ui.theme.ToDoListScreen
-import com.example.timer2.ui.theme.PomodoroTimerScreen
 import com.example.timer2.ui.theme.PomodoroTimerAppTheme
-import com.example.timer2.viewmodel.ToDoViewModel
-import com.example.timer2.viewmodel.ToDoViewModelFactory
+import com.example.timer2.ui.theme.AppNavigation
+import com.example.timer2.PreferencesHelper
 
 class MainActivity : ComponentActivity() {
-
-    // Initialize the database and repository
-    private val database by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java, "pomodoro-timer-db"
-        ).fallbackToDestructiveMigration().build()
-    }
-
-    private val toDoRepository by lazy { ToDoRepository(database.toDoItemDao()) }
-
-    // Use the factory to provide the repository to the ToDoViewModel
-    private val toDoViewModel: ToDoViewModel by viewModels {
-        ToDoViewModelFactory(toDoRepository)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize the database and repository
+        val database = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "pomodoro-timer-db"
+        ).build()
+        val repository = ToDoRepository(database.toDoItemDao())
+
+        // Initialize the PreferencesHelper
+        val preferencesHelper = PreferencesHelper(this)
+
         setContent {
-            PomodoroTimerAppTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    MainScreen(toDoViewModel)
-                }
-            }
+            MainActivityContent(repository, preferencesHelper)
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(toDoViewModel: ToDoViewModel) {
+fun MainActivityContent(repository: ToDoRepository, preferencesHelper: PreferencesHelper) {
     val navController = rememberNavController()
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("To-Do List") }
-            )
-        },
-        content = { paddingValues ->
-            NavHost(
-                navController = navController,
-                startDestination = "todo_list"
-            ) {
-                composable("todo_list") {
-                    ToDoListScreen(
-                        viewModel = toDoViewModel,
-                        onPomodoroStart = { taskName ->
-                            navController.navigate("pomodoro_timer/$taskName")
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
-                composable("pomodoro_timer/{taskName}") { backStackEntry ->
-                    val taskName = backStackEntry.arguments?.getString("taskName") ?: ""
-                    PomodoroTimerScreen(
-                        taskName = taskName,
-                        onBack = { navController.popBackStack() }
-                    )
-                }
+    val pomodoroTime = remember { mutableStateOf(preferencesHelper.getPomodoroDuration()) } // Load from SharedPreferences
+    val isDarkTheme = remember { mutableStateOf(false) }
+
+    PomodoroTimerAppTheme(darkTheme = isDarkTheme.value) {
+        AppNavigation(
+            navController = navController,
+            repository = repository,
+            pomodoroTime = pomodoroTime,
+            onThemeChange = { isDarkTheme.value = it },
+            onPomodoroTimeChange = { newTime ->
+                pomodoroTime.value = newTime
+                preferencesHelper.savePomodoroDuration(newTime) // Save to SharedPreferences
             }
-        }
-    )
+        )
+    }
 }
