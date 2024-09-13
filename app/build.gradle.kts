@@ -65,6 +65,7 @@ dependencies {
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation(libs.androidx.runtime.livedata)
 
     // Room (for database)
     val room_version = "2.6.1"
