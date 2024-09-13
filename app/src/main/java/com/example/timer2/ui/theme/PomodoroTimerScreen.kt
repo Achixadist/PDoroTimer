@@ -19,28 +19,33 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.example.timer2.viewmodel.PomodoroTimerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PomodoroTimerScreen(
     navController: NavController,
-    timerDuration: Int, // Accept the timer duration from shared state
-    onTimerReset: () -> Unit
+    timerDuration: Int,
+    onTimerReset: () -> Unit,
+    viewModel: PomodoroTimerViewModel = viewModel(),
+    isSoundEnabled: Boolean,
+    isVibrationEnabled: Boolean
 ) {
-    var isRunning by remember { mutableStateOf(false) }
-    var timeRemaining by remember { mutableStateOf(timerDuration) }
-    val scope = rememberCoroutineScope()
+    val timeRemaining by viewModel.timeRemaining.observeAsState(timerDuration)
+    val isRunning by viewModel.isRunning.observeAsState(false)
+
+    // Set the initial duration when the screen is first composed
+    LaunchedEffect(timerDuration) {
+        viewModel.setInitialDuration(timerDuration)
+    }
 
     Scaffold(
         topBar = {
@@ -73,27 +78,13 @@ fun PomodoroTimerScreen(
                 modifier = Modifier.padding(top = 16.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Button(onClick = {
-                    isRunning = !isRunning
-                    if (isRunning) {
-                        scope.launch {
-                            while (isRunning && timeRemaining > 0) {
-                                delay(1000)
-                                timeRemaining -= 1
-                            }
-                            if (timeRemaining == 0) {
-                                isRunning = false // Auto-stop when timer reaches zero
-                            }
-                        }
-                    }
-                }) {
+                Button(onClick = { viewModel.toggleTimer() }) {
                     Text(if (isRunning) "Pause" else "Start")
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = {
+                    viewModel.resetTimer()
                     onTimerReset()
-                    isRunning = false
-                    timeRemaining = timerDuration // Reset time using shared state
                 }) {
                     Text("Reset Timer")
                 }

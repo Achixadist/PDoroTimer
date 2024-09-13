@@ -64,7 +64,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.6.1")
 
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation(libs.androidx.runtime.livedata)
+    implementation ("androidx.fragment:fragment-ktx:1.1.0")
 
     // Room (for database)
     val room_version = "2.6.1"

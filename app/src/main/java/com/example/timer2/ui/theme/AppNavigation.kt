@@ -11,9 +11,14 @@ import com.example.timer2.data.ToDoRepository
 fun AppNavigation(
     navController: NavHostController,
     repository: ToDoRepository,
-    pomodoroTime: MutableState<Int>, // Shared state for Pomodoro time
+    pomodoroTime: MutableState<Int>,
     onThemeChange: (Boolean) -> Unit,
-    onPomodoroTimeChange: (Int) -> Unit // Define the parameter here
+    onPomodoroTimeChange: (Int) -> Unit,
+    onSoundChange: (Boolean) -> Unit,
+    onVibrationChange: (Boolean) -> Unit,
+    isSoundEnabled: MutableState<Boolean>,
+    isVibrationEnabled: MutableState<Boolean>,
+    isDarkTheme: MutableState<Boolean> // Add this new parameter
 ) {
     NavHost(navController = navController, startDestination = "todoList") {
         composable("todoList") {
@@ -22,15 +27,22 @@ fun AppNavigation(
         composable("settings") {
             SettingsScreen(
                 navController = navController,
-                onPomodoroTimeChange = onPomodoroTimeChange, // Pass the onPomodoroTimeChange parameter
-                onThemeChange = onThemeChange
+                onPomodoroTimeChange = onPomodoroTimeChange,
+                onThemeChange = onThemeChange,
+                onSoundChange = onSoundChange,
+                onVibrationChange = onVibrationChange,
+                isSoundEnabled = isSoundEnabled,
+                isVibrationEnabled = isVibrationEnabled,
+                isDarkTheme = isDarkTheme.value // Pass the current theme state here
             )
         }
         composable("pomodoroTimer/{id}") { backStackEntry ->
             PomodoroTimerScreen(
                 navController = navController,
                 timerDuration = pomodoroTime.value,
-                onTimerReset = { /* Logic for resetting the timer */ }
+                onTimerReset = { /* Logic for resetting the timer */ },
+                isSoundEnabled = isSoundEnabled.value,
+                isVibrationEnabled = isVibrationEnabled.value
             )
         }
     }
