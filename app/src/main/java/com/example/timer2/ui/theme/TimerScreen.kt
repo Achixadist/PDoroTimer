@@ -16,10 +16,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.timer2.timer.TimerType
 import com.example.timer2.timer.TimerViewModel
 
 @Composable
 fun PomodoroTimerScreen(
+    navController: NavController,
     viewModel: TimerViewModel = viewModel()
 ) {
     // Observing state from ViewModel
@@ -29,6 +32,10 @@ fun PomodoroTimerScreen(
     val minutes = (timeLeftInMillis / 1000) / 60
     val seconds = (timeLeftInMillis / 1000) % 60
     val timeFormatted = String.format("%02d:%02d", minutes, seconds)
+
+    val fullMinutes = (viewModel.activeTimer.duration / 1000) / 60
+    val fullSeconds = (viewModel.activeTimer.duration / 1000) % 60
+    val fullTimerFormatted = String.format("%02d:%02d", fullMinutes, fullSeconds)
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -46,10 +53,20 @@ fun PomodoroTimerScreen(
                 fontSize = 48.sp,
                 color = Color.Black,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(0.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = if (isTimerRunning) "${viewModel.activeTimer.timerName + " " + fullTimerFormatted}"
+                else viewModel.activeTimer.timerName,
+                fontSize = 30.sp,
+                color = Color.Black,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(0.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = {
@@ -72,7 +89,7 @@ fun PomodoroTimerScreen(
 
             Button(
                 onClick = {
-                    viewModel.swapToWork() // Calls the start method for Short Break
+                    viewModel.swapTo(TimerType.WORK) // Calls the start method for Short Break
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -90,7 +107,7 @@ fun PomodoroTimerScreen(
 
             Button(
                 onClick = {
-                    viewModel.swapToRefresh() // Calls the start method for Short Break
+                    viewModel.swapTo(TimerType.REFRESH) // Calls the start method for Short Break
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,7 +125,7 @@ fun PomodoroTimerScreen(
 
             Button(
                 onClick = {
-                    viewModel.swapToBreak() // Calls the start method for Long Break
+                    viewModel.swapTo(TimerType.BREAK) // Calls the start method for Long Break
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -137,6 +154,24 @@ fun PomodoroTimerScreen(
                     color = Color.White
                 )
             }
+
+
+            //NAVIGATION
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(onClick = { navController.navigate(Screen.TodoList.route) }) {
+                    Text("To-Do")
+                }
+                Button(onClick = { navController.navigate(Screen.Tutorial.route) }) {
+                    Text("Tutorial")
+                }
+                Button(onClick = { navController.navigate(Screen.Settings.route) }) {
+                    Text("Settings")
+                }
+            }
+
         }
     }
 }

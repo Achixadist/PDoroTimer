@@ -1,9 +1,11 @@
 package com.example.timer2.timer
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.timer2.data.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +27,14 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning
 
+    private val _currentTimerType = MutableStateFlow(TimerType.DEFAULT)
+    val currentTimerType: StateFlow<TimerType> = _currentTimerType
+
+    private val _timerTime = MutableStateFlow(25 * 60 * 1000L)
+    val timerTime: StateFlow<Long> = _timerTime
+
+    private var timerJob: Job? = null
+
     init {
         val database = PomodoroDatabase.getDatabase(application)
         val sessionDao = database.pomodoroSessionDao()
@@ -37,66 +47,59 @@ class TimerViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Setting Timers
-    private val defaultTimer = SetTimer(TimerSettings().defaultTimer, TimerType.DEFAULT)
-    private val workTimer = SetTimer(TimerSettings().currentTimer, TimerType.WORK)
-    private val refreshTimer = SetTimer(TimerSettings().refreshTimer, TimerType.REFRESH)
-    private val breakTimer = SetTimer(TimerSettings().breakTimer, TimerType.BREAK)
+    private val defaultTimer = SetTimer(TimerSettings().defaultTimer, TimerType.DEFAULT, "Default")
+    private val workTimer = SetTimer(TimerSettings().currentTimer, TimerType.WORK, "Work")
+    private val refreshTimer = SetTimer(TimerSettings().refreshTimer, TimerType.REFRESH, "Refresh")
+    private val breakTimer = SetTimer(TimerSettings().breakTimer, TimerType.BREAK, "Break")
 
-    private var activeTimer: SetTimer = defaultTimer
+    var activeTimer: SetTimer = defaultTimer
 
     // Function to start the timer with the specified duration
     private fun start(duration: Long, onFinish: () -> Unit) {
 
         _isRunning.value = true
 
-        viewModelScope.launch {
+        timerJob = viewModelScope.launch {
             val endTime = System.currentTimeMillis() + _timeLeft.value
             while (System.currentTimeMillis() < endTime && _isRunning.value) {
                 _timeLeft.value = endTime - System.currentTimeMillis()
                 delay(100) // Update every 100ms for smoother countdown
+                Log.d("TimerViewModel", "Test1")
             }
             if (_timeLeft.value <= 0L) {
+                Log.d("TimerViewModel", "Test2")
                 _isRunning.value = false
                 onFinish()
             }
         }
     }
 
-    private fun stop(){
-        _isRunning.value = false
-    }
-
     fun startTimer() {
         start(activeTimer.duration) {
-            // Actions when Pomodoro timer finishes
+            Log.d("TimerViewModel", "Test3")
         }
     }
 
     fun pauseTimer() {
         _isRunning.value = false // Pauses the timer
+        timerJob?.cancel()
     }
 
-    fun swapToWork() {
-        activeTimer = workTimer
+    fun swapTo(timerType: TimerType){
+        activeTimer = when (timerType){
+            TimerType.DEFAULT -> defaultTimer
+            TimerType.WORK -> workTimer
+            TimerType.REFRESH -> refreshTimer
+            TimerType.BREAK -> breakTimer
+        }
         resetTimer()
-    }
-
-    fun swapToRefresh(){
-        activeTimer = refreshTimer
-        resetTimer()
-    }
-
-    fun swapToBreak(){
-        activeTimer = breakTimer
-        resetTimer()
+        _timerTime.value = activeTimer.duration
     }
 
     fun resetTimer() {
-        stop()
+        pauseTimer()
         _timeLeft.value = activeTimer.duration
     }
-
-
 
     // To-Do Methods
     fun insertToDoItem(toDoItem: ToDoItem) {
