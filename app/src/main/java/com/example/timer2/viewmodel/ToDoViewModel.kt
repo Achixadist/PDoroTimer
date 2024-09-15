@@ -17,6 +17,10 @@ class ToDoViewModel(private val repository: ToDoRepository) : ViewModel() {
         }
     }
 
+    fun getToDoItemById(id: Int): Flow<ToDoItem?> {
+        return repository.getToDoItemById(id)
+    }
+
     fun deleteToDoItem(toDoItem: ToDoItem) {
         viewModelScope.launch {
             repository.deleteToDoItem(toDoItem)

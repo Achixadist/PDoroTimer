@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
 @Composable
-fun SettingsScreen(
+fun PauseScreen(
     navController: NavController,
     onPomodoroTimeChange: (Int) -> Unit,
     onThemeChange: (Boolean) -> Unit,
@@ -56,6 +56,10 @@ fun SettingsScreen(
             style = MaterialTheme.typography.headlineMedium,
             color = textColor // Set text color based on theme
         )
+
+        Button(onClick = { showInputDialog = true }) {
+            Text("Set Pomodoro Timer")
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(),

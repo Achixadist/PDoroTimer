@@ -59,7 +59,7 @@ fun ToDoListScreen(
     val toDoItems by viewModel.allToDoItems.collectAsState(initial = emptyList())
     val coroutineScope = rememberCoroutineScope()
     var newItemText by remember { mutableStateOf(TextFieldValue("")) }
-    var newItemDuration by remember { mutableStateOf(25) } // Default duration in minutes
+    var newItemDuration by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -91,7 +91,7 @@ fun ToDoListScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(item.name, modifier = Modifier.weight(1f))
-                        Text("Duration: ${pomodoroTime.value / 60} min") // Display user-set Pomodoro duration
+                        Text("Duration: ${item.duration} min") // Display item-specific duration
                         IconButton(onClick = { viewModel.deleteToDoItem(item) }) {
                             Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
                         }
@@ -115,21 +115,19 @@ fun ToDoListScreen(
                     modifier = Modifier
                         .weight(1f)
                         .padding(8.dp)
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)) // Background color to enhance visibility
-                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)) // Border for distinction
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                         .padding(8.dp),
                     textStyle = LocalTextStyle.current.copy(
-                        color = MaterialTheme.colorScheme.onSurface, // Text color for readability
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 16.sp
                     ),
                     singleLine = true
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 BasicTextField(
-                    value = TextFieldValue(newItemDuration.toString()),
-                    onValueChange = { value ->
-                        newItemDuration = value.text.toIntOrNull() ?: 25 // Default to 25 if input is invalid
-                    },
+                    value = newItemDuration,
+                    onValueChange = { newItemDuration = it },
                     modifier = Modifier
                         .width(50.dp)
                         .padding(8.dp)
@@ -144,12 +142,16 @@ fun ToDoListScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = {
-                    if (newItemText.text.isNotBlank()) {
+                    if (newItemText.text.isNotBlank() && newItemDuration.isNotBlank()) {
                         coroutineScope.launch {
                             viewModel.addToDoItem(
-                                ToDoItem(name = newItemText.text, duration = newItemDuration) // Include duration
+                                ToDoItem(
+                                    name = newItemText.text,
+                                    duration = newItemDuration.toIntOrNull() ?: 25
+                                )
                             )
-                            newItemText = TextFieldValue("") // Clear input field
+                            newItemText = TextFieldValue("")
+                            newItemDuration = ""
                         }
                     }
                 }) {

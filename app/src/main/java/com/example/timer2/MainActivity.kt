@@ -65,7 +65,8 @@ fun MainActivityContent(repository: ToDoRepository, preferencesHelper: Preferenc
             },
             isSoundEnabled = isSoundEnabled,
             isVibrationEnabled = isVibrationEnabled,
-            isDarkTheme = isDarkTheme // Add this line to pass isDarkTheme
+            isDarkTheme = isDarkTheme, // Add this line to pass isDarkTheme
+            preferencesHelper = preferencesHelper
         )
     }
 }

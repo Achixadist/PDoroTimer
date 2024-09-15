@@ -12,6 +12,10 @@ class ToDoRepository(private val toDoItemDao: ToDoItemDao) {
         toDoItemDao.insertToDoItem(item)
     }
 
+    fun getToDoItemById(id: Int): Flow<ToDoItem?> {
+        return toDoItemDao.getToDoItemById(id)
+    }
+
     suspend fun deleteToDoItem(item: ToDoItem) {
         toDoItemDao.deleteToDoItem(item)
     }

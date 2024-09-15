@@ -2,10 +2,18 @@ package com.example.timer2.ui.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.example.timer2.PreferencesHelper
 import com.example.timer2.data.ToDoRepository
+import com.example.timer2.viewmodel.SettingsViewModel
+import com.example.timer2.viewmodel.ToDoViewModel
+import com.example.timer2.viewmodel.ToDoViewModelFactory
 
 @Composable
 fun AppNavigation(
@@ -18,11 +26,18 @@ fun AppNavigation(
     onVibrationChange: (Boolean) -> Unit,
     isSoundEnabled: MutableState<Boolean>,
     isVibrationEnabled: MutableState<Boolean>,
-    isDarkTheme: MutableState<Boolean> // Add this new parameter
+    isDarkTheme: MutableState<Boolean>,
+    preferencesHelper: PreferencesHelper
 ) {
+    val toDoViewModel: ToDoViewModel = viewModel(factory = ToDoViewModelFactory(repository))
+
     NavHost(navController = navController, startDestination = "todoList") {
         composable("todoList") {
-            ToDoListScreen(navController = navController, repository = repository, pomodoroTime = pomodoroTime)
+            ToDoListScreen(
+                navController = navController,
+                repository = repository,
+                pomodoroTime = pomodoroTime
+            )
         }
         composable("settings") {
             SettingsScreen(
@@ -33,17 +48,39 @@ fun AppNavigation(
                 onVibrationChange = onVibrationChange,
                 isSoundEnabled = isSoundEnabled,
                 isVibrationEnabled = isVibrationEnabled,
-                isDarkTheme = isDarkTheme.value // Pass the current theme state here
+                isDarkTheme = isDarkTheme.value
             )
         }
-        composable("pomodoroTimer/{id}") { backStackEntry ->
-            PomodoroTimerScreen(
+        composable("Pause"){
+            PauseScreen(
                 navController = navController,
-                timerDuration = pomodoroTime.value,
-                onTimerReset = { /* Logic for resetting the timer */ },
-                isSoundEnabled = isSoundEnabled.value,
-                isVibrationEnabled = isVibrationEnabled.value
+                onPomodoroTimeChange = onPomodoroTimeChange,
+                onThemeChange = onThemeChange,
+                onSoundChange = onSoundChange,
+                onVibrationChange = onVibrationChange,
+                isSoundEnabled = isSoundEnabled,
+                isVibrationEnabled = isVibrationEnabled,
+                isDarkTheme = isDarkTheme.value
             )
+        }
+        composable(
+            "pomodoroTimer/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getInt("id") ?: 0
+            val toDoItem = toDoViewModel.getToDoItemById(itemId).collectAsState(initial = null).value
+
+            if (toDoItem != null) {
+                PomodoroTimerScreen(
+                    navController = navController,
+                    timerDuration = toDoItem.duration * 60, // Convert minutes to seconds
+                    onTimerReset = { /* Logic for resetting the timer */ },
+                    preferencesHelper = preferencesHelper,
+                    selectedTimerName = toDoItem.name
+                )
+            } else {
+                // Handle case when item is not found (e.g., show an error message or navigate back)
+            }
         }
     }
 }

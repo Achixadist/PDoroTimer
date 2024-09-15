@@ -13,6 +13,9 @@ interface ToDoItemDao {
     @Query("SELECT * FROM to_do_item_table")
     fun getAllToDoItems(): Flow<List<ToDoItem>>
 
+    @Query("SELECT * FROM to_do_item_table WHERE id = :id")
+    fun getToDoItemById(id: Int): Flow<ToDoItem?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertToDoItem(item: ToDoItem)
 
