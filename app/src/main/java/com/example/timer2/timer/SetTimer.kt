@@ -7,5 +7,5 @@ enum class TimerType{
     BREAK
 }
 
-class SetTimer (val duration: Long, val timerType: TimerType) {
+class SetTimer (var duration: Long, val timerType: TimerType) {
 }
