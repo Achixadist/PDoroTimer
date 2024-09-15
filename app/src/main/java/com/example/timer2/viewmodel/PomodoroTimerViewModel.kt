@@ -2,7 +2,10 @@ package com.example.timer2.viewmodel
 
 import android.app.Application
 import android.media.MediaPlayer
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
+import androidx.core.content.getSystemService
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,6 +20,14 @@ enum class TimerType {
     NORMAL,
     SHORT,
     LONG
+}
+
+enum class TimerState {
+    WAITING,
+    RUNNING,
+    PAUSED,
+    DONE,
+    BREAKDONE
 }
 
 class PomodoroTimerViewModel(
@@ -45,6 +56,9 @@ class PomodoroTimerViewModel(
     private val _navigateToPauseScreen = MutableLiveData<Boolean>(false)
     val navigateToPauseScreen: LiveData<Boolean> = _navigateToPauseScreen
 
+    private val _timerState = MutableLiveData<TimerState>(TimerState.WAITING)
+    val timerState: LiveData<TimerState> = _timerState
+
     private val _currentTimerDuration = MutableLiveData<Long>()
     val currentTimerDuration: LiveData<Long> = _currentTimerDuration
 
@@ -52,16 +66,16 @@ class PomodoroTimerViewModel(
     private val _currentBreakDuration = MutableLiveData<Long>()
     val currentBreakDuration: LiveData<Long> = _currentBreakDuration
 
+    private val vibrator = application.getSystemService<Vibrator>()
+
     private var timerJob: Job? = null
     private var initialDuration: Int = 0
 
     private var mediaPlayer: MediaPlayer? = null
 
-    private val shortBreakDuration = 2 * 1000L // 5 minutes
-    private val longBreakDuration = 3 * 1000L // 15 minutes
+    private val shortBreakDuration = 5 * 60 * 1000L // 5 minutes
+    private val longBreakDuration = 15 * 60 * 1000L // 15 minutes
     private var pausedTimeLeft: Long = 0
-
-    private val testDuration = 3 * 1000L // 15 minutes
 
     fun setInitialDuration(duration: Int) {
         initialDuration = duration
@@ -80,8 +94,23 @@ class PomodoroTimerViewModel(
         }
     }
 
+    private fun vibrate() {
+        val isVibrationEnabled = preferencesHelper.getVibrationEnabled()
+        Log.d("PomodoroTimer", "Vibration enabled: $isVibrationEnabled")
+        if (preferencesHelper.getVibrationEnabled() && vibrator != null) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(1000, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(1000)
+            }
+        }
+    }
+
     private fun startTimer(duration: Long) {
         if (_isRunning.value == true) return
+
+        _timerState.value = TimerState.RUNNING
 
         _isRunning.value = true
         _waiting.value = false
@@ -92,13 +121,11 @@ class PomodoroTimerViewModel(
                 _timeRemaining.value = (_timeLeft.value!! / 1000).toInt()
                 delay(100) // update Interval
                 Log.d("TimerViewModel", "Timer Running")
-                settingsRead()
             }
             if (_timeRemaining.value == 0) {
                 _isRunning.value = false
                 _timeRemaining.value = 0
                 Log.d("TimerViewModel", "Timer Done")
-                resetTimer()
                 endOfTimer()
             }
         }
@@ -124,8 +151,15 @@ class PomodoroTimerViewModel(
     }
 
     fun endOfTimer() {
+        if(_timerType.value == TimerType.NORMAL){
+            _timerState.value = TimerState.DONE
+        }else{
+            _timerState.value = TimerState.BREAKDONE
+        }
+
         _navigateToPauseScreen.value = true
         playAlarmSound()
+        vibrate()
         _isRunning.value = false
         _waiting.value = true
         pausedTimeLeft = 0
@@ -133,10 +167,6 @@ class PomodoroTimerViewModel(
 
     fun resetPauseScreen() {
         _navigateToPauseScreen.value = false
-    }
-
-    fun settingsRead() {
-        Log.d("SettingsTest", "${preferencesHelper.getSoundEnabled()}")
     }
 
     private fun playAlarmSound() {
@@ -159,12 +189,14 @@ class PomodoroTimerViewModel(
     }
 
     private fun pauseTimer() {
+        _timerState.value = TimerState.PAUSED
         _isRunning.value = false
         timerJob?.cancel()
         pausedTimeLeft = _timeLeft.value ?: 0
     }
 
     fun resetTimer() {
+        _timerState.value = TimerState.WAITING
         timerJob?.cancel()
         _isRunning.value = false
         _currentTimerDuration.value?.let { duration ->
@@ -173,6 +205,7 @@ class PomodoroTimerViewModel(
         }
         pausedTimeLeft = 0
         _waiting.value = false
+        _timerType.value = TimerType.NORMAL
     }
 
     override fun onCleared() {

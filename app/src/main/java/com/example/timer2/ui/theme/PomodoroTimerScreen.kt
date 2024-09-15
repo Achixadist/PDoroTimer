@@ -33,6 +33,7 @@ import com.example.timer2.PreferencesHelper
 import com.example.timer2.viewmodel.PomodoroTimerViewModel
 import com.example.timer2.viewmodel.PomodoroTimerViewModelFactory
 import com.example.timer2.viewmodel.SettingsViewModel
+import com.example.timer2.viewmodel.TimerState
 import com.example.timer2.viewmodel.TimerType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +55,7 @@ fun PomodoroTimerScreen(
     val isRunning by viewModel.isRunning.observeAsState(false)
     val waiting by viewModel.waiting.observeAsState(false)
     val timerType by viewModel.timerType.observeAsState(TimerType.NORMAL)
+    val timerState by viewModel.timerState.observeAsState(TimerState.WAITING)
 
     LaunchedEffect(timerDuration) {
         viewModel.setInitialDuration(timerDuration)
@@ -104,7 +106,14 @@ fun PomodoroTimerScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Time: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}",
+                text = when (timerState){
+                    TimerState.WAITING ->"Waiting: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
+                    TimerState.RUNNING ->"Running: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
+                    TimerState.PAUSED ->"Paused: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
+                    TimerState.DONE ->"Done: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
+                    TimerState.BREAKDONE ->"Break Done: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
+                },
+
                 style = MaterialTheme.typography.headlineMedium
             )
 

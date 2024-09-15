@@ -73,7 +73,7 @@ fun AppNavigation(
             if (toDoItem != null) {
                 PomodoroTimerScreen(
                     navController = navController,
-                    timerDuration = toDoItem.duration * 60, // Convert minutes to seconds
+                    timerDuration = toDoItem.duration * 60 , // Change for testing !!!!!!!!!!
                     onTimerReset = { /* Logic for resetting the timer */ },
                     preferencesHelper = preferencesHelper,
                     selectedTimerName = toDoItem.name
