@@ -70,8 +70,9 @@ fun PomodoroTimerScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (waiting) {
+            if (waiting){
                 Row(
+                    modifier = Modifier.padding(top = 16.dp),
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Button(onClick = { viewModel.selectTimer(TimerType.NORMAL) }) {
@@ -81,6 +82,8 @@ fun PomodoroTimerScreen(
                     Button(onClick = { viewModel.selectTimer(TimerType.SHORT) }) {
                         Text("Short Break (5:00)")
                     }
+                }
+                Row {
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = { viewModel.selectTimer(TimerType.LONG) }) {
                         Text("Long Break (15:00)")

@@ -39,14 +39,18 @@ class PomodoroTimerViewModel(
     private val _breakRunning = MutableLiveData<Boolean>()
     val breakRunning: LiveData<Boolean> = _breakRunning
 
-    private val _waiting = MutableLiveData<Boolean>()
-    val waiting: LiveData<Boolean> = _waiting
+    private val _waiting = MutableLiveData<Boolean>(false)
+    val waiting: LiveData<Boolean> get()= _waiting
 
     private val _navigateToPauseScreen = MutableLiveData<Boolean>(false)
     val navigateToPauseScreen: LiveData<Boolean> = _navigateToPauseScreen
 
     private val _currentTimerDuration = MutableLiveData<Long>()
     val currentTimerDuration: LiveData<Long> = _currentTimerDuration
+
+    // ersatz für currenttimer wenn man vom break aus resettet
+    private val _currentBreakDuration = MutableLiveData<Long>()
+    val currentBreakDuration: LiveData<Long> = _currentBreakDuration
 
     private var timerJob: Job? = null
     private var initialDuration: Int = 0
@@ -64,6 +68,7 @@ class PomodoroTimerViewModel(
         _timeRemaining.value = duration
         _timeLeft.value = duration * 1000L
         _currentTimerDuration.value = duration * 1000L
+        _currentBreakDuration.value = duration * 1000L
         _waiting.value = false
     }
 
@@ -89,10 +94,11 @@ class PomodoroTimerViewModel(
                 Log.d("TimerViewModel", "Timer Running")
                 settingsRead()
             }
-            _isRunning.value = false
-            if (_timeLeft.value!! <= 0) {
+            if (_timeRemaining.value == 0) {
+                _isRunning.value = false
                 _timeRemaining.value = 0
                 Log.d("TimerViewModel", "Timer Done")
+                resetTimer()
                 endOfTimer()
             }
         }
@@ -103,23 +109,24 @@ class PomodoroTimerViewModel(
         when (timerType) {
             TimerType.NORMAL -> {
                 _breakRunning.value = false
-                _currentTimerDuration.value = initialDuration * 1000L
+                _currentBreakDuration.value = initialDuration * 1000L
             }
             TimerType.SHORT -> {
                 _breakRunning.value = true
-                _currentTimerDuration.value = shortBreakDuration
+                _currentBreakDuration.value = shortBreakDuration
             }
             TimerType.LONG -> {
                 _breakRunning.value = true
-                _currentTimerDuration.value = longBreakDuration
+                _currentBreakDuration.value = longBreakDuration
             }
         }
-        startTimer(_currentTimerDuration.value!!)
+        startTimer(currentBreakDuration.value!!)
     }
 
     fun endOfTimer() {
         _navigateToPauseScreen.value = true
         playAlarmSound()
+        _isRunning.value = false
         _waiting.value = true
         pausedTimeLeft = 0
     }
