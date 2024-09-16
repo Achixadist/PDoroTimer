@@ -9,16 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +27,6 @@ import androidx.navigation.NavController
 import com.example.timer2.PreferencesHelper
 import com.example.timer2.viewmodel.PomodoroTimerViewModel
 import com.example.timer2.viewmodel.PomodoroTimerViewModelFactory
-import com.example.timer2.viewmodel.SettingsViewModel
 import com.example.timer2.viewmodel.TimerState
 import com.example.timer2.viewmodel.TimerType
 
@@ -51,9 +45,7 @@ fun PomodoroTimerScreen(
     ),
     selectedTimerName: String
 ) {
-    val timeRemaining by viewModel.timeRemaining.observeAsState(timerDuration)
-    val isRunning by viewModel.isRunning.observeAsState(false)
-    val waiting by viewModel.waiting.observeAsState(false)
+    val timeLeft by viewModel.timeLeft.observeAsState(timerDuration * 1000L)
     val timerType by viewModel.timerType.observeAsState(TimerType.NORMAL)
     val timerState by viewModel.timerState.observeAsState(TimerState.WAITING)
 
@@ -72,7 +64,7 @@ fun PomodoroTimerScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (waiting){
+            if (timerState == TimerState.DONE || timerState == TimerState.BREAK){
                 Row(
                     modifier = Modifier.padding(top = 16.dp),
                     horizontalArrangement = Arrangement.Center
@@ -105,15 +97,10 @@ fun PomodoroTimerScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            val minutes = (timeLeft / 1000 / 60).toInt()
+            val seconds = ((timeLeft / 1000) % 60).toInt()
             Text(
-                text = when (timerState){
-                    TimerState.WAITING ->"Waiting: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
-                    TimerState.RUNNING ->"Running: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
-                    TimerState.PAUSED ->"Paused: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
-                    TimerState.DONE ->"Done: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
-                    TimerState.BREAKDONE ->"Break Done: ${timeRemaining / 60}:${(timeRemaining % 60).toString().padStart(2, '0')}"
-                },
-
+                text = "${timerState.name}: $minutes:${seconds.toString().padStart(2, '0')}",
                 style = MaterialTheme.typography.headlineMedium
             )
 
@@ -123,15 +110,17 @@ fun PomodoroTimerScreen(
                 modifier = Modifier.padding(top = 16.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                Button(onClick = { viewModel.toggleTimer() }) {
-                    Text(if (isRunning) "Pause" else "Start")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = {
-                    viewModel.resetTimer()
-                    onTimerReset()
-                }) {
-                    Text("Reset Timer")
+                if(timerState != TimerState.BREAK && timerState != TimerState.DONE){
+                    Button(onClick = { viewModel.toggleTimer() }) {
+                        Text(if (timerState == TimerState.RUNNING) "Pause" else "Start")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = {
+                        viewModel.resetTimer()
+                        onTimerReset()
+                    }) {
+                        Text("Reset Timer")
+                    }
                 }
             }
 
