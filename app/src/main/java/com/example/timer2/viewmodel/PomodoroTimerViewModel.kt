@@ -1,7 +1,9 @@
 package com.example.timer2.viewmodel
 
 import android.app.Application
+import android.content.Intent
 import android.media.MediaPlayer
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.Log
@@ -12,6 +14,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.timer2.PreferencesHelper
 import com.example.timer2.R
+import com.example.timer2.PomodoroTimerService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -31,7 +34,7 @@ enum class TimerState {
 }
 
 class PomodoroTimerViewModel(
-    application: Application,
+    private val application: Application,
     private val preferencesHelper: PreferencesHelper
 ) : AndroidViewModel(application) {
 
@@ -90,6 +93,8 @@ class PomodoroTimerViewModel(
         if (_timerState.value == TimerState.RUNNING) return
 
         _timerState.value = TimerState.RUNNING
+        startForegroundService(duration)
+
         timerJob = viewModelScope.launch {
             val endTime = System.currentTimeMillis() + duration
             while (System.currentTimeMillis() < endTime && _timerState.value == TimerState.RUNNING) {
@@ -98,6 +103,25 @@ class PomodoroTimerViewModel(
             }
             endOfTimer()
         }
+    }
+
+    private fun startForegroundService(duration: Long) {
+        val intent = Intent(application, PomodoroTimerService::class.java).apply {
+            action = "START"
+            putExtra("DURATION", duration)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            application.startForegroundService(intent)
+        } else {
+            application.startService(intent)
+        }
+    }
+
+    private fun stopForegroundService() {
+        val intent = Intent(application, PomodoroTimerService::class.java).apply {
+            action = "STOP"
+        }
+        application.stopService(intent)
     }
 
     fun selectTimer(timerType: TimerType) {
@@ -144,6 +168,7 @@ class PomodoroTimerViewModel(
     private fun pauseTimer() {
         _timerState.value = TimerState.PAUSED
         timerJob?.cancel()
+        stopForegroundService()
     }
 
     fun resetTimer() {
@@ -152,6 +177,7 @@ class PomodoroTimerViewModel(
         _timerType.value = TimerType.NORMAL
         _currentTimerDuration.value = initialDuration
         _timeLeft.value = initialDuration
+        stopForegroundService()
     }
 
     override fun onCleared() {
