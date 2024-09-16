@@ -27,7 +27,7 @@ enum class TimerState {
     RUNNING,
     PAUSED,
     DONE,
-    BREAKDONE
+    BREAK
 }
 
 class PomodoroTimerViewModel(
@@ -35,11 +35,8 @@ class PomodoroTimerViewModel(
     private val preferencesHelper: PreferencesHelper
 ) : AndroidViewModel(application) {
 
-    private val _timeRemaining = MutableLiveData<Int>()
-    val timeRemaining: LiveData<Int> = _timeRemaining
-
-    private val _isRunning = MutableLiveData<Boolean>()
-    val isRunning: LiveData<Boolean> = _isRunning
+    private val _timerState = MutableLiveData<TimerState>(TimerState.WAITING)
+    val timerState: LiveData<TimerState> = _timerState
 
     private val _timeLeft = MutableLiveData(0L)
     val timeLeft: LiveData<Long> = _timeLeft
@@ -47,50 +44,32 @@ class PomodoroTimerViewModel(
     private val _timerType = MutableLiveData<TimerType>(TimerType.NORMAL)
     val timerType: LiveData<TimerType> = _timerType
 
-    private val _breakRunning = MutableLiveData<Boolean>()
-    val breakRunning: LiveData<Boolean> = _breakRunning
-
-    private val _waiting = MutableLiveData<Boolean>(false)
-    val waiting: LiveData<Boolean> get()= _waiting
-
     private val _navigateToPauseScreen = MutableLiveData<Boolean>(false)
     val navigateToPauseScreen: LiveData<Boolean> = _navigateToPauseScreen
-
-    private val _timerState = MutableLiveData<TimerState>(TimerState.WAITING)
-    val timerState: LiveData<TimerState> = _timerState
 
     private val _currentTimerDuration = MutableLiveData<Long>()
     val currentTimerDuration: LiveData<Long> = _currentTimerDuration
 
-    // ersatz für currenttimer wenn man vom break aus resettet
-    private val _currentBreakDuration = MutableLiveData<Long>()
-    val currentBreakDuration: LiveData<Long> = _currentBreakDuration
-
+    private var initialDuration: Long = 0L
     private val vibrator = application.getSystemService<Vibrator>()
-
     private var timerJob: Job? = null
-    private var initialDuration: Int = 0
-
     private var mediaPlayer: MediaPlayer? = null
 
     private val shortBreakDuration = 5 * 60 * 1000L // 5 minutes
     private val longBreakDuration = 15 * 60 * 1000L // 15 minutes
-    private var pausedTimeLeft: Long = 0
 
     fun setInitialDuration(duration: Int) {
-        initialDuration = duration
-        _timeRemaining.value = duration
-        _timeLeft.value = duration * 1000L
-        _currentTimerDuration.value = duration * 1000L
-        _currentBreakDuration.value = duration * 1000L
-        _waiting.value = false
+        initialDuration = duration * 1000L
+        _currentTimerDuration.value = initialDuration
+        _timeLeft.value = initialDuration
+        _timerState.value = TimerState.WAITING
     }
 
     fun toggleTimer() {
-        if (_isRunning.value == true) {
-            pauseTimer()
-        } else {
-            startTimer(pausedTimeLeft.takeIf { it > 0 } ?: _currentTimerDuration.value ?: (initialDuration * 1000L))
+        when (_timerState.value) {
+            TimerState.RUNNING -> pauseTimer()
+            TimerState.PAUSED, TimerState.WAITING -> startTimer(_timeLeft.value ?: _currentTimerDuration.value ?: 0L)
+            else -> {} // Do nothing for DONE and BREAKDONE states
         }
     }
 
@@ -108,61 +87,35 @@ class PomodoroTimerViewModel(
     }
 
     private fun startTimer(duration: Long) {
-        if (_isRunning.value == true) return
+        if (_timerState.value == TimerState.RUNNING) return
 
         _timerState.value = TimerState.RUNNING
-
-        _isRunning.value = true
-        _waiting.value = false
         timerJob = viewModelScope.launch {
             val endTime = System.currentTimeMillis() + duration
-            while (System.currentTimeMillis() < endTime && _isRunning.value == true) {
+            while (System.currentTimeMillis() < endTime && _timerState.value == TimerState.RUNNING) {
                 _timeLeft.value = endTime - System.currentTimeMillis()
-                _timeRemaining.value = (_timeLeft.value!! / 1000).toInt()
-                delay(100) // update Interval
-                Log.d("TimerViewModel", "Timer Running")
+                delay(100) // update interval
             }
-            if (_timeRemaining.value == 0) {
-                _isRunning.value = false
-                _timeRemaining.value = 0
-                Log.d("TimerViewModel", "Timer Done")
-                endOfTimer()
-            }
+            endOfTimer()
         }
     }
 
     fun selectTimer(timerType: TimerType) {
         _timerType.value = timerType
-        when (timerType) {
-            TimerType.NORMAL -> {
-                _breakRunning.value = false
-                _currentBreakDuration.value = initialDuration * 1000L
-            }
-            TimerType.SHORT -> {
-                _breakRunning.value = true
-                _currentBreakDuration.value = shortBreakDuration
-            }
-            TimerType.LONG -> {
-                _breakRunning.value = true
-                _currentBreakDuration.value = longBreakDuration
-            }
+        _currentTimerDuration.value = when (timerType) {
+            TimerType.NORMAL -> initialDuration
+            TimerType.SHORT -> shortBreakDuration
+            TimerType.LONG -> longBreakDuration
         }
-        startTimer(currentBreakDuration.value!!)
+        _timeLeft.value = _currentTimerDuration.value
+        _timerState.value = TimerState.WAITING
     }
 
-    fun endOfTimer() {
-        if(_timerType.value == TimerType.NORMAL){
-            _timerState.value = TimerState.DONE
-        }else{
-            _timerState.value = TimerState.BREAKDONE
-        }
-
+    private fun endOfTimer() {
+        _timerState.value = if (_timerType.value == TimerType.NORMAL) TimerState.DONE else TimerState.BREAK
         _navigateToPauseScreen.value = true
         playAlarmSound()
         vibrate()
-        _isRunning.value = false
-        _waiting.value = true
-        pausedTimeLeft = 0
     }
 
     fun resetPauseScreen() {
@@ -190,22 +143,15 @@ class PomodoroTimerViewModel(
 
     private fun pauseTimer() {
         _timerState.value = TimerState.PAUSED
-        _isRunning.value = false
         timerJob?.cancel()
-        pausedTimeLeft = _timeLeft.value ?: 0
     }
 
     fun resetTimer() {
-        _timerState.value = TimerState.WAITING
         timerJob?.cancel()
-        _isRunning.value = false
-        _currentTimerDuration.value?.let { duration ->
-            _timeLeft.value = duration
-            _timeRemaining.value = (duration / 1000).toInt()
-        }
-        pausedTimeLeft = 0
-        _waiting.value = false
+        _timerState.value = TimerState.WAITING
         _timerType.value = TimerType.NORMAL
+        _currentTimerDuration.value = initialDuration
+        _timeLeft.value = initialDuration
     }
 
     override fun onCleared() {
